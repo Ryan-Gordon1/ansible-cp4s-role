@@ -1,2 +1,4 @@
 ---
 # tasks file for ansible-cp4s-role
+- name: Test Role end to end
+  import_tasks: create-incident.yml

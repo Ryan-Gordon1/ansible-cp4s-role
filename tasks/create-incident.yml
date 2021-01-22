@@ -1,0 +1,71 @@
+# Task variable layout
+#
+# vars:
+#    cp4shost: The location of the CP4S or Resilient instance. e.g <hostname>:<port> or <hostname>
+#    username: email address for the CP4S or Resilient user to authenticate as
+#    password: password for the CP4S or Resilient user to authenticate as
+#
+# ************************************************************************************
+# Auth related tasks
+# Tasks which hit a session endpoint and register the response object so that
+# subsequent tasks which make API calls can make use of the acquired cookie from the auth task
+# TODO: Make a task for authentication with API KEY
+- name: Authenticate with the session endpoint to get a token for other tasks
+  uri:
+    validate_certs: no
+    url: "https://{{cp4shost}}/rest/session"
+    method: POST
+    body_format: json
+    body:
+      email: "{{username}}"
+      password: "{{password}}"
+    status_code: 200
+  register: login
+
+
+
+# Tasks Related to Creation 
+# Each task here will make use of the cookie acquired by the above task to make permitted calls.
+# Tasks here focused on creating the most minimal object as possible. 
+# The create case task passes only name and discovered_date by default
+# If you have custom fields which are marked as mandatory on creation of an incident you will need to add those
+- name: Create Case in CP4S
+  uri:
+    validate_certs: no
+    method: POST
+    url: "https://{{cp4shost}}/rest/orgs/{{login.json.orgs[0].id}}/incidents"
+    headers:
+      Cookie: "{{ login.set_cookie }}"
+    body_format: json
+    body: |
+      {
+        "name": "test",
+        "discovered_date": 0
+      }
+    status_code:
+      - 200
+  #response.json.request_id
+  #response.json.details
+  #response.json.status
+  register: create_response
+
+#https://{cp4shost}/rest/orgs/{org}/incidents/{incident}/tasks
+- name: Create new task on created Case in CP4S or Resilient
+  uri:
+    validate_certs: no
+    method: POST
+    url: "https://{{cp4shost}}/rest/orgs/{{login.json.orgs[0].id}}/incidents/{{create_response.json.id}}/tasks"
+    headers:
+      Cookie: "{{ login.set_cookie }}"
+    body_format: json
+    body: |
+      {
+        "name": "Example Task "
+      }
+    status_code:
+      - 200
+  #response.json.request_id
+  #response.json.details
+  #response.json.status
+  register: create_task_response
+
