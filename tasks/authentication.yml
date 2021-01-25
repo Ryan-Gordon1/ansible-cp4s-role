@@ -1,0 +1,34 @@
+# The MIT License
+#  
+# Copyright 2021 Ryan-Gordon1
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+- name: Authenticate with the session endpoint using username and password to get a token for other tasks
+  when: username is defined and password is defined
+  uri:
+    validate_certs: no
+    url: "https://{{cp4shost}}/rest/session"
+    method: POST
+    body_format: json
+    body:
+      email: "{{username}}"
+      password: "{{password}}"
+    status_code: 200
+  register: login
+
+# TODO: When registering a variable for two tasks, the value set in the first task will either be overwritten by this task or set to an empty value
+# When using both of these and conditionally skipping the login registered variable value is lost
+# - name: Authenticate with the session endpoint using API KEY to get a token for other tasks
+#   when: api_key_id is defined and api_key_secret is defined
+#   uri:
+#     validate_certs: no
+#     url: "https://{{cp4shost}}/rest/session"
+#     method: POST
+#     body_format: json
+#     body:
+#       email: "{{api_key_id}}"
+#       password: "{{api_key_secret}}"
+#     status_code: 200
+#   register: login
