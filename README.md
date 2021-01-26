@@ -73,4 +73,4 @@ Author Information
 ------------------
 
 An optional section for the role authors to include contact information, or a website (HTML is not allowed).
-This role was developed by Ryan Gordon @ IBM. See this link for our [support portal]() and this one for our [community forum](). Please raise a github issue with problems.
+This role was developed by Ryan Gordon @ IBM. See this link for our [community forum](http://ibm.biz/resilientcommunity). Please raise a github issue with problems.
