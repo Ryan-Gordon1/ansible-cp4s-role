@@ -1,0 +1,75 @@
+# The MIT License
+#  
+# Copyright 2021 Ryan-Gordon1
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# Task variable layout
+#
+# vars:
+#    cp4shost: The location of the CP4S or Resilient instance. e.g <hostname>:<port> or <hostname>
+#    username: email address for the CP4S or Resilient user to authenticate as
+#    password: password for the CP4S or Resilient user to authenticate as
+#
+# ************************************************************************************
+# Auth related tasks
+# Tasks which hit a session endpoint and register the response object so that
+# subsequent tasks which make API calls can make use of the acquired cookie from the auth task
+# TODO: Make a task for authentication with API KEY
+
+
+# TODO: Remove above tasks if abstraction works
+- name: "Authenticate with CP4S / Resilient and register a login token"
+  import_tasks: authentication.yml
+# Tasks Related to Creation 
+# Each task here will make use of the cookie acquired by the above task to make permitted calls.
+# Tasks here focused on creating the most minimal object as possible. 
+# The create case task passes only name and discovered_date by default
+# If you have custom fields which are marked as mandatory on creation of a case you will need to add those
+# TODO: Review conditionally using the APIKey instead 
+# Possible replacement for login.json.orgs
+# {{not login.skipped | ternary(obj1, obj2)}}
+- name: Get Case in CP4S
+  uri:
+    validate_certs: no
+    method: GET
+    url: "https://{{cp4shost}}/rest/orgs/{{login.json.orgs[0].id}}/incidents/{{case_id}}"
+    headers:
+      Cookie: "{{ login.set_cookie }}"
+    body_format: json
+    body: |
+      {
+        "name": "test",
+        "discovered_date": 0
+      }
+    status_code:
+      - 200
+  #response.json.IncidentDTO
+  register: get_case
+
+- name: Print version
+  debug:
+    msg: "Resp: {{ get_case.json }}"
+
+- name: Close Case in CP4S
+  uri:
+    validate_certs: no
+    method: PATCH
+    url: "https://{{cp4shost}}/rest/orgs/{{login.json.orgs[0].id}}/incidents/{{case_id}}"
+    headers:
+      Cookie: "{{ login.set_cookie }}"
+    body_format: json
+    # TODO: Review the static 
+    body: |
+      {
+       "changes":[
+         {"field":"resolution_id","old_value":{{get_case.json.resolution_id}} ,"new_value":{"id": "{{resolution_id}}"}},
+         {"field":"resolution_summary","old_value":{{get_case.json.resolution_summary}},"new_value":{"textarea":{"format":"html","content":"<div class=\"rte\"><div>{{resolution_summary}}</div></div>"}}},
+         {"field":"plan_status","old_value":{{get_case.json.plan_status}},"new_value":{"text":"C"}}]}
+      }
+    status_code:
+      - 200
+  #response.json.TaskDTO
+  register: close_response
+

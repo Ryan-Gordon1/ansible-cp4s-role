@@ -1,4 +1,9 @@
 ---
 # tasks file for ansible-cp4s-role
 - name: Test Role end to end
-  import_tasks: create-incident.yml
+  when: operation is not defined 
+  import_tasks: create-case.yml
+
+- name: Close a case
+  when: operation is defined and operation == "close_case"
+  import_tasks: close-case.yml
